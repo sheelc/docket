@@ -2,9 +2,11 @@
   (:require [taoensso.timbre :as timbre]
             [com.stuartsierra.component :as component]
             [org.httpkit.server :as httpkit]
+            [datascript.core :as d]
             [docket.config :as config]
             [docket.handler :refer [create-handler]]
             [docket.syncer :refer [map->Syncer]]
+            [docket.schema :refer [schema]]
             [docket.socket-manager :refer [map->SocketManager]]))
 
 (defrecord AppHandler [logger socket-manager]
@@ -31,10 +33,10 @@
 (defn system-map [config]
   (component/system-map
    :logger (logger (config :logging))
-   :app-state (atom {:cluster {:cluster-arn (:cluster-arn config)}})
+   :app-state (d/create-conn schema)
    :app-handler (map->AppHandler {})
    :embedded-server (map->Server (select-keys config [:server-opts]))
-   :syncer (map->Syncer {})
+   :syncer (map->Syncer (select-keys config [:cluster-arn]))
    :socket-manager (map->SocketManager {})))
 
 (defn dependency-map []

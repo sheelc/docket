@@ -12,7 +12,8 @@
                  [reagent "0.6.0-alpha2"]
                  [amazonica "0.3.58"]
                  [com.fasterxml.jackson.core/jackson-core "2.5.3"]
-                 [overtone/at-at "1.2.0"]]
+                 [overtone/at-at "1.2.0"]
+                 [datascript "0.15.0"]]
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-figwheel "0.5.3-2"]]
   :figwheel {:nrepl-port 4000

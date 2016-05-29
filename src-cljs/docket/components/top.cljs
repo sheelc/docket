@@ -1,14 +1,15 @@
 (ns docket.components.top
-  (:require [reagent.core :as r]))
+  (:require [reagent.core :as r]
+            [datascript.core :as d]))
 
 
 (defn cluster-summary [cluster]
   [:div
-   [:h1 "Cluster " (:cluster-name @cluster)]
+   [:h1 "Cluster " (:cluster-name cluster)]
    [:div
-    [:div "Running tasks: " (:running-tasks-count @cluster)]
-    [:div "Pending tasks: " (:pending-tasks-count @cluster)]
-    [:div "Registered container instances: " (:registered-container-instances-count @cluster)]]])
+    [:div "Running tasks: " (:running-tasks-count cluster)]
+    [:div "Pending tasks: " (:pending-tasks-count cluster)]
+    [:div "Registered container instances: " (:registered-container-instances-count cluster)]]])
 
 (defn instance-item [instance]
   [:tr
@@ -20,13 +21,17 @@
    [:h2 "Instances"]
    [:table
     [:thead
-     [:td "EC2 Instance Id"]
-     [:td "Running Tasks Count"]]
+     [:tr
+      [:th "EC2 Instance Id"]
+      [:th "Running Tasks Count"]]]
     [:tbody
-     (for [instance @instances]
+     (for [instance instances]
        ^{:key (:ec2instance-id instance)} [instance-item instance])]]])
 
-(defn top-component [state]
-  [:div
-   [cluster-summary (r/cursor state [:cluster])]
-   [instances-list (r/cursor state [:container-instances])]])
+(defn top-component [app]
+  (let [db (:db @app)
+        cluster (d/q '[:find ?e :where [?e :cluster-arn]] @db)]
+    (when (seq cluster)
+      [:div
+       [cluster-summary (d/pull @db '[*] (ffirst cluster))]
+       [instances-list (d/pull-many @db '[*] (map first (d/q '[:find ?e :where [?e :ec2instance-id]] @db)))]])))
