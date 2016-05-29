@@ -36,7 +36,8 @@
                 :pretty-print true
                 :output-dir "resources/public/js/out"}}
     :release
-    {:compiler {:main "docket.core"
+    {:source-paths ["src-cljs"]
+     :compiler {:main "docket.core"
                 :asset-path "/js/out"
                 :output-to "target/release/js/out/main.js"
                 :output-dir "target/release/js/out"
