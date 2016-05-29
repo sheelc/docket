@@ -4,6 +4,7 @@
             [org.httpkit.server :as httpkit]
             [docket.config :as config]
             [docket.handler :refer [create-handler]]
+            [docket.syncer :refer [map->Syncer]]
             [docket.socket-manager :refer [map->SocketManager]]))
 
 (defrecord AppHandler [logger socket-manager]
@@ -30,14 +31,16 @@
 (defn system-map [config]
   (component/system-map
    :logger (logger (config :logging))
-   :app-state (atom {:instances [{:id "first instance"}]})
+   :app-state (atom {:cluster {:cluster-arn (:cluster-arn config)}})
    :app-handler (map->AppHandler {})
    :embedded-server (map->Server (select-keys config [:server-opts]))
+   :syncer (map->Syncer {})
    :socket-manager (map->SocketManager {})))
 
 (defn dependency-map []
   {:app-handler [:logger :socket-manager]
    :socket-manager [:app-state]
+   :syncer [:logger :app-state]
    :embedded-server {:app :app-handler}})
 
 (defn create-system

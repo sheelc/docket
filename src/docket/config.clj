@@ -13,7 +13,8 @@
                              {:standard-out
                               (get-in timbre/example-config [:appenders :standard-out])}})})
 
-(def env-config {:environment (env :environment)})
+(def env-config {:environment (env :environment)
+                 :cluster-arn (env :cluster-arn)})
 
 (defn deep-merge
   [& maps]
