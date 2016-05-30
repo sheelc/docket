@@ -9,7 +9,8 @@
 (defonce app (r/atom {}))
 
 (defn on-state-change [new-db]
-  (swap! app assoc :db (d/conn-from-db (read-string new-db))))
+  (swap! app assoc :db (d/conn-from-db (read-string new-db)))
+  (r/force-update-all))
 
 (defn reset-app []
   (reset! app {:socket (socket/create-socket on-state-change)
