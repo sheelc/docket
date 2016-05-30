@@ -25,7 +25,7 @@
         {:on-click #(swap! expanded not)}
         [:div.col.col-2 (:container-instance/ec2instance-id instance)]
         (let [status (:container-instance/status instance)]
-          [:div.col.col-2 {:class (if (= "ACTIVE" status) "text-success" "text-warning")} status])
+          [:div.col.col-2 {:class (if (= "ACTIVE" status) "green" "orange")} status])
         [:div.col.col-2 (:agent-version (:container-instance/version-info instance))]
         [:div.col.col-2 (:docker-version (:container-instance/version-info instance))]
         [:div.col.col-2 (:container-instance/running-tasks-count instance)]
