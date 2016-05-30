@@ -1,6 +1,7 @@
 (ns docket.core
   (:require [docket.socket :as socket]
             [cljs.reader :refer [read-string]]
+            [docket.readers :as docket-readers]
             [datascript.core :as d]
             [docket.components.top :refer [top-component]]
             [reagent.core :as r]))

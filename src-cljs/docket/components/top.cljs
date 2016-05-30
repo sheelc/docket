@@ -1,20 +1,21 @@
 (ns docket.components.top
   (:require [reagent.core :as r]
+            [docket.query-utils :as qu]
             [datascript.core :as d]))
 
 
 (defn cluster-summary [cluster]
   [:div
-   [:h1 "Cluster " (:cluster-name cluster)]
+   [:h1 "Cluster " (:cluster/cluster-name cluster)]
    [:div
-    [:div "Running tasks: " (:running-tasks-count cluster)]
-    [:div "Pending tasks: " (:pending-tasks-count cluster)]
-    [:div "Registered container instances: " (:registered-container-instances-count cluster)]]])
+    [:div "Running tasks: " (:cluster/running-tasks-count cluster)]
+    [:div "Pending tasks: " (:cluster/pending-tasks-count cluster)]
+    [:div "Registered container instances: " (:cluster/registered-container-instances-count cluster)]]])
 
 (defn instance-item [instance]
   [:tr
-   [:td (:ec2instance-id instance)]
-   [:td (:running-tasks-count instance)]])
+   [:td (:container-instance/ec2instance-id instance)]
+   [:td (:container-instance/running-tasks-count instance)]])
 
 (defn instances-list [instances]
   [:div
@@ -26,12 +27,27 @@
       [:th "Running Tasks Count"]]]
     [:tbody
      (for [instance instances]
-       ^{:key (:ec2instance-id instance)} [instance-item instance])]]])
+       ^{:key (:container-instance/container-instance-arn instance)} [instance-item instance])]]])
+
+(defn task-item [task]
+  [:tr
+   [:td (:task/task-arn task)]])
+
+(defn tasks-list [tasks]
+  [:div
+   [:h2 "Tasks"]
+   [:table
+    [:thead
+     [:tr]]
+    [:tbody
+     (for [task tasks]
+       ^{:key (:task/task-arn task)} [task-item task])]]])
 
 (defn top-component [app]
   (let [db (:db @app)
-        cluster (d/q '[:find ?e :where [?e :cluster-arn]] @db)]
+        cluster (qu/qe-by @db :cluster/cluster-arn)]
     (when (seq cluster)
       [:div
-       [cluster-summary (d/pull @db '[*] (ffirst cluster))]
-       [instances-list (d/pull-many @db '[*] (map first (d/q '[:find ?e :where [?e :ec2instance-id]] @db)))]])))
+       [cluster-summary cluster]
+       [instances-list (qu/qes-by @db :container-instance/container-instance-arn)]
+       [tasks-list (qu/qes-by @db :task/task-arn)]])))
