@@ -51,10 +51,10 @@
     [:div.my1.clearfix.border-bottom
      [:div.col.col-2 "EC2 Instance Id"]
      [:div.col.col-2 "Status"]
-     [:div.col.col-2 "Agent Version" ]
-     [:div.col.col-2 "Docker Version" ]
+     [:div.col.col-2 "Agent Version"]
+     [:div.col.col-2 "Docker Version"]
      [:div.col.col-2 "Running Tasks Count"]
-     [:div.col.col-2 "Memory Remaining" ]]
+     [:div.col.col-2 "Memory Remaining"]]
     (for [instance instances]
       ^{:key (:container-instance/container-instance-arn instance)} [instance-item db instance])]])
 
