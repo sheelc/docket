@@ -20,22 +20,23 @@
 (defn instance-item [db instance]
   (let [expanded (r/atom false)]
     (fn [db instance]
-      [:div.clearfix.my1.pointer
-       {:on-click #(swap! expanded not)}
-       [:div.col.col-2
-        (if @expanded
-          [:div.mr2.inline-block.triangle.triangle-down {:style {:border-width "8.7px 5px 0 5px"}}]
-          [:div.mr2.inline-block.triangle.triangle-right {:style {:border-width "5px 0 5px 8.7px" :margin-left "2px"}}])
-        (:container-instance/ec2instance-id instance)]
-       (let [status (:container-instance/status instance)]
-         [:div.col.col-2 {:class (if (= "ACTIVE" status) "green" "orange")} status])
-       [:div.col.col-2 (:agent-version (:container-instance/version-info instance))]
-       [:div.col.col-2 (:docker-version (:container-instance/version-info instance))]
-       [:div.col.col-2 (:container-instance/running-tasks-count instance)]
-       [:div.col.col-2 (remaining-memory instance)]
+      [:div
+       [:div.clearfix.my1.pointer
+        {:on-click #(swap! expanded not)}
+        [:div.col.col-2
+         (if @expanded
+           [:div.mr2.inline-block.triangle.triangle-down {:style {:border-width "8.7px 5px 0 5px"}}]
+           [:div.mr2.inline-block.triangle.triangle-right {:style {:border-width "5px 0 5px 8.7px" :margin-left "2px"}}])
+         (:container-instance/ec2instance-id instance)]
+        (let [status (:container-instance/status instance)]
+          [:div.col.col-2 {:class (if (= "ACTIVE" status) "green" "orange")} status])
+        [:div.col.col-2 (:agent-version (:container-instance/version-info instance))]
+        [:div.col.col-2 (:docker-version (:container-instance/version-info instance))]
+        [:div.col.col-2 (:container-instance/running-tasks-count instance)]
+        [:div.col.col-2 (remaining-memory instance)]]
        (when @expanded
-         [:div.col.col-12.my1.ml3.p1.bg-off-white
-          [:div.my1 "Tasks"]
+         [:div.my1.ml3.p1.bg-off-white
+          [:div.my1.underline "Tasks"]
           (for [task (qu/qes '[:find ?e
                                :in $ ?c
                                :where [?e :task/container-instance ?c]]
