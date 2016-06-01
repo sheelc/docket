@@ -20,19 +20,22 @@
 (defn instance-item [db instance]
   (let [expanded (r/atom false)]
     (fn [db instance]
-      [:div
-       [:div.clearfix.my1.pointer
-        {:on-click #(swap! expanded not)}
-        [:div.col.col-2 (:container-instance/ec2instance-id instance)]
-        (let [status (:container-instance/status instance)]
-          [:div.col.col-2 {:class (if (= "ACTIVE" status) "green" "orange")} status])
-        [:div.col.col-2 (:agent-version (:container-instance/version-info instance))]
-        [:div.col.col-2 (:docker-version (:container-instance/version-info instance))]
-        [:div.col.col-2 (:container-instance/running-tasks-count instance)]
-        [:div.col.col-2 (remaining-memory instance)]]
+      [:div.clearfix.my1.pointer
+       {:on-click #(swap! expanded not)}
+       [:div.col.col-2
+        (if @expanded
+          [:div.mr2.inline-block.triangle.triangle-down {:style {:border-width "8.7px 5px 0 5px"}}]
+          [:div.mr2.inline-block.triangle.triangle-right {:style {:border-width "5px 0 5px 8.7px" :margin-left "2px"}}])
+        (:container-instance/ec2instance-id instance)]
+       (let [status (:container-instance/status instance)]
+         [:div.col.col-2 {:class (if (= "ACTIVE" status) "green" "orange")} status])
+       [:div.col.col-2 (:agent-version (:container-instance/version-info instance))]
+       [:div.col.col-2 (:docker-version (:container-instance/version-info instance))]
+       [:div.col.col-2 (:container-instance/running-tasks-count instance)]
+       [:div.col.col-2 (remaining-memory instance)]
        (when @expanded
-         [:div.col.col-12
-          [:div "Tasks"]
+         [:div.col.col-12.my1.ml3.p1.bg-off-white
+          [:div.my1 "Tasks"]
           (for [task (qu/qes '[:find ?e
                                :in $ ?c
                                :where [?e :task/container-instance ?c]]
@@ -44,30 +47,15 @@
   [:div.my3
    [:div.h2 "Instances"]
    [:div.clearfix
-    [:div
+    [:div.my1.clearfix.border-bottom
      [:div.col.col-2 "EC2 Instance Id"]
      [:div.col.col-2 "Status"]
      [:div.col.col-2 "Agent Version" ]
      [:div.col.col-2 "Docker Version" ]
      [:div.col.col-2 "Running Tasks Count"]
      [:div.col.col-2 "Memory Remaining" ]]
-    [:div
-     (for [instance instances]
-       ^{:key (:container-instance/container-instance-arn instance)} [instance-item db instance])]]])
-
-(defn task-item [task]
-  [:tr
-   [:td (:task/task-arn task)]])
-
-(defn tasks-list [tasks]
-  [:div
-   [:div.h2 "Tasks"]
-   [:table.table.table-hover
-    [:thead
-     [:tr]]
-    [:tbody
-     (for [task tasks]
-       ^{:key (:task/task-arn task)} [task-item task])]]])
+    (for [instance instances]
+      ^{:key (:container-instance/container-instance-arn instance)} [instance-item db instance])]])
 
 (defn top-component [app]
   (let [db (:db @app)
@@ -75,5 +63,4 @@
     (when (seq cluster)
       [:div.p4
        [cluster-summary cluster]
-       [instances-list db (qu/qes-by @db :container-instance/container-instance-arn)]
-       [tasks-list (qu/qes-by @db :task/task-arn)]])))
+       [instances-list db (qu/qes-by @db :container-instance/container-instance-arn)]])))
