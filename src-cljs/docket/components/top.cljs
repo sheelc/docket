@@ -21,7 +21,7 @@
   (let [expanded (r/atom false)]
     (fn [db instance]
       [:div
-       [:div.clearfix.my1.pointer
+       [:a.block.clearfix.my1.pointer
         {:on-click #(swap! expanded not)}
         [:div.col.col-2
          (if @expanded
@@ -32,7 +32,8 @@
           [:div.col.col-2 {:class (if (= "ACTIVE" status) "green" "orange")} status])
         [:div.col.col-2 (:agent-version (:container-instance/version-info instance))]
         [:div.col.col-2 (:docker-version (:container-instance/version-info instance))]
-        [:div.col.col-2 (:container-instance/running-tasks-count instance)]
+        [:div.col.col-1 (:container-instance/pending-tasks-count instance)]
+        [:div.col.col-1 (:container-instance/running-tasks-count instance)]
         [:div.col.col-2 (remaining-memory instance)]]
        (when @expanded
          [:div.my1.ml3.p1.bg-off-white
@@ -53,7 +54,8 @@
      [:div.col.col-2 "Status"]
      [:div.col.col-2 "Agent Version"]
      [:div.col.col-2 "Docker Version"]
-     [:div.col.col-2 "Running Tasks Count"]
+     [:div.col.col-1 "Pending"]
+     [:div.col.col-1 "Running"]
      [:div.col.col-2 "Memory Remaining"]]
     (for [instance instances]
       ^{:key (:container-instance/container-instance-arn instance)} [instance-item db instance])]])
