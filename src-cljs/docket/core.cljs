@@ -14,6 +14,7 @@
 
 (defn reset-app []
   (reset! app {:socket (socket/create-socket on-state-change)
+               :ui {}
                :db (d/create-conn {})})
   (r/render-component [top-component app]
                       (.getElementById js/document "content")))

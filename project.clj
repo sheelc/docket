@@ -14,7 +14,9 @@
                  [com.fasterxml.jackson.core/jackson-core "2.5.3"]
                  [overtone/at-at "1.2.0"]
                  [datascript "0.15.0"]
-                 [com.andrewmcveigh/cljs-time "0.4.0"]]
+                 [com.andrewmcveigh/cljs-time "0.4.0"]
+                 [ring/ring-json "0.3.1"]
+                 [cljs-ajax "0.5.5"]]
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-figwheel "0.5.3-2"]]
   :figwheel {:nrepl-port 4000
@@ -22,7 +24,7 @@
   :clean-targets ^{:protect false} [:target-path
                                     "resources/public/js/out/"
                                     "resources/public/css/"]
-  :source-paths ["src"]
+  :source-paths ["src" "src-cljc"]
   :main docket.core
   :repl-options {:init-ns user}
   :jvm-opts ["-XX:-OmitStackTraceInFastThrow" "-Xmx768m"]
@@ -30,7 +32,7 @@
   :cljsbuild
   {:builds
    {:dev
-    {:source-paths ["src-cljs"]
+    {:source-paths ["src-cljs" "src-cljc"]
      :figwheel {:on-jsload "docket.core/on-jsload"}
      :compiler {:main "docket.core"
                 :asset-path "/js/out"

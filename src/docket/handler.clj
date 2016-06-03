@@ -5,6 +5,7 @@
             [ring.util.response :refer [redirect response status content-type]]
             [docket.socket-manager :refer [store-socket! clear-socket!]]
             [org.httpkit.server :refer [with-channel on-close send!]]
+            [ring.middleware.json :refer [wrap-json-params wrap-json-response]]
             [noir-exception.core :refer [wrap-exceptions]]))
 
 (defn uuid [] (str (java.util.UUID/randomUUID)))
@@ -24,6 +25,10 @@
    (-> (routes (GET "/healthcheck" [] "cool beans")
                (GET "/" [] (redirect "/index.html"))
                (GET "/socket" req (create-socket socket-manager logger req))
+               (context "/api" []
+                        (POST "/create-service" {params :params} (response {:message params})))
                (route/resources "/")
                (route/not-found "Not found"))
+       (wrap-json-response)
+       (wrap-json-params)
        (wrap-exceptions))))

@@ -4,6 +4,7 @@
             [datascript.core :as d]
             [clojure.set :refer [rename-keys difference]]
             [clojure.string :as str]
+            [docket.accessors.instance :as instance]
             [amazonica.aws.ecs :as ecs]))
 
 (defn prefix-key [prefix k]
@@ -35,8 +36,14 @@
         retracts (map (partial retract-entity ident) gone-idents)]
     (concat updates retracts)))
 
+(defn add-resource-keys [{rem-resources :container-instance/remaining-resources :as inst}]
+  (assoc inst
+         :container-instance/remaining-memory (instance/remaining-memory inst)
+         :container-instance/remaining-cpu (instance/remaining-cpu inst)))
+
 (defn update-container-instance-txns [cluster-arn container-instance-arns]
   (map (comp (partial add-refs {:container-instance/cluster (constantly [:cluster/cluster-arn cluster-arn])})
+          (partial add-resource-keys)
           (partial prefix-keys "container-instance"))
        (:container-instances (ecs/describe-container-instances {:container-instances container-instance-arns
                                                                 :cluster cluster-arn}))))
