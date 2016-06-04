@@ -57,12 +57,25 @@
     (for [instance (qu/qes-by @db :container-instance/container-instance-arn)]
       ^{:key (:container-instance/container-instance-arn instance)} [instance-item db instance])]])
 
+(defn service-item [service]
+  [:div.clearfix
+   [:div.col.col-2 (:service/service-name service)]
+   [:div.col.col-2 (:service/number-of-tasks service)]
+   [:div.col.col-2 (:service/task-def service)]])
+
 (defn services-list [db modal-display]
   [:div.my3
-   [:a.h2.inline-block "Services"]
-   [:a.ml2.pointer
-    {:on-click #(reset! modal-display :add-service)}
-    "+ Add Service"]])
+   [:div.clearfix
+    [:a.h2.inline-block "Services"]
+    [:a.ml2.pointer
+     {:on-click #(reset! modal-display :add-service)}
+     "+ Add Service"]]
+   [:div.clearfix.my1.border-bottom
+    [:div.col.col-2 "Service Name"]
+    [:div.col.col-2 "Task Definition"]
+    [:div.col.col-2 "Desired number of Tasks"]]
+   (for [service (qu/qes-by @db :service/service-name)]
+     ^{:key (:service/service-name service)} [service-item service])])
 
 (defn scrim [modal-display]
   [:div.absolute.top-0.left-0.body-fill.bg-light-gray.semi-transparent

@@ -2,28 +2,13 @@
   (:require [com.stuartsierra.component :as component]
             [overtone.at-at :as at-at]
             [datascript.core :as d]
-            [clojure.set :refer [rename-keys difference]]
-            [clojure.string :as str]
+            [clojure.set :refer [difference]]
             [docket.accessors.instance :as instance]
+            [docket.datascript-utils :as du]
             [amazonica.aws.ecs :as ecs]))
 
-(defn prefix-key [prefix k]
-  (keyword (str prefix "/" (str/replace k ":" ""))))
-
-(defn prefix-keys [prefix m]
-  (rename-keys m (zipmap (keys m) (map (partial prefix-key prefix) (keys m)))))
-
-(defn rel-from-key [key rel m]
-  [rel (key m)])
-
-(defn add-ref [m k f]
-  (assoc m k (f m)))
-
-(defn add-refs [refs m]
-  (reduce-kv add-ref m refs))
-
 (defn get-cluster [cluster-arn]
-  (prefix-keys "cluster"
+  (du/prefix-keys "cluster"
                (first (:clusters (ecs/describe-clusters {:clusters [cluster-arn]})))))
 
 (defn retract-entity [lookup-ref lookup-val]
@@ -42,9 +27,9 @@
          :container-instance/remaining-cpu (instance/remaining-cpu inst)))
 
 (defn update-container-instance-txns [cluster-arn container-instance-arns]
-  (map (comp (partial add-refs {:container-instance/cluster (constantly [:cluster/cluster-arn cluster-arn])})
+  (map (comp (partial du/add-refs {:container-instance/cluster (constantly [:cluster/cluster-arn cluster-arn])})
           (partial add-resource-keys)
-          (partial prefix-keys "container-instance"))
+          (partial du/prefix-keys "container-instance"))
        (:container-instances (ecs/describe-container-instances {:container-instances container-instance-arns
                                                                 :cluster cluster-arn}))))
 
@@ -55,11 +40,11 @@
                  (partial update-container-instance-txns cluster-arn)))
 
 (defn update-task-txns [cluster-arn task-arns]
-  (map (comp (partial add-refs {:task/cluster (constantly [:cluster/cluster-arn cluster-arn])
-                       :task/container-instance (partial rel-from-key
+  (map (comp (partial du/add-refs {:task/cluster (constantly [:cluster/cluster-arn cluster-arn])
+                       :task/container-instance (partial du/rel-from-key
                                                    :task/container-instance-arn
                                                    :container-instance/container-instance-arn)})
-          (partial prefix-keys "task"))
+          (partial du/prefix-keys "task"))
        (:tasks (ecs/describe-tasks {:tasks task-arns
                                     :cluster cluster-arn}))))
 

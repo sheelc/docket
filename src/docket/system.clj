@@ -40,7 +40,7 @@
    :socket-manager (map->SocketManager {})))
 
 (defn dependency-map []
-  {:app-handler [:logger :socket-manager]
+  {:app-handler [:logger :socket-manager :app-state]
    :socket-manager [:app-state]
    :syncer [:logger :app-state]
    :embedded-server {:app :app-handler}})
