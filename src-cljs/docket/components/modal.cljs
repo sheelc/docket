@@ -45,7 +45,6 @@
     (fn [modal-display]
       [:div.fixed.top-0.right-0.bottom-0.left-0.flex.items-center.justify-center
        [:div.border.gray-border.box-shadow.bg-white.p3
-        {:style {:opacity 1.0}}
         [:div.clearfix.border-bottom.mb2.pb1
          [:a.right.pointer.h2
           {:on-click #(reset! modal-display nil)} "×"]]
