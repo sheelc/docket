@@ -9,7 +9,7 @@
 
 (defn get-cluster [cluster-arn]
   (du/prefix-keys "cluster"
-               (first (:clusters (ecs/describe-clusters {:clusters [cluster-arn]})))))
+                  (first (:clusters (ecs/describe-clusters {:clusters [cluster-arn]})))))
 
 (defn retract-entity [lookup-ref lookup-val]
   [:db.fn/retractEntity [lookup-ref lookup-val]])
@@ -41,9 +41,9 @@
 
 (defn update-task-txns [cluster-arn task-arns]
   (map (comp (partial du/add-refs {:task/cluster (constantly [:cluster/cluster-arn cluster-arn])
-                       :task/container-instance (partial du/rel-from-key
-                                                   :task/container-instance-arn
-                                                   :container-instance/container-instance-arn)})
+                          :task/container-instance (partial du/rel-from-key
+                                                      :task/container-instance-arn
+                                                      :container-instance/container-instance-arn)})
           (partial du/prefix-keys "task"))
        (:tasks (ecs/describe-tasks {:tasks task-arns
                                     :cluster cluster-arn}))))
