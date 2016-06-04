@@ -32,7 +32,7 @@
          [:input.h3.block {:type "number" :min 0 :on-change (partial store-input inputs :number-of-tasks)}]
 
          [:label.h3.block.mt3.mb1 "Task Definition"]
-         [:input.h3.block {:type "text" :on-change (partial store-input inputs :task-def)}]
+         [:input.h3.block {:type "text" :on-change (partial store-input inputs :task-def-name)}]
 
          [:input.mt3 {:type "submit" :value "Create!"}]
          (when-let [msg (:message @failure-response)]

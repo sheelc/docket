@@ -58,10 +58,25 @@
       ^{:key (:container-instance/container-instance-arn instance)} [instance-item db instance])]])
 
 (defn service-item [service]
-  [:div.clearfix.my1
-   [:div.col.col-2 (:service/service-name service)]
-   [:div.col.col-2 (:service/task-def service)]
-   [:div.col.col-2 (:service/number-of-tasks service)]])
+  (let [expanded (r/atom false)]
+    (fn [service]
+      [:div
+       [:a.block.clearfix.my1.pointer
+        {:on-click #(swap! expanded not)}
+        [:div.col.col-2
+         (if @expanded
+           [:div.mr2.inline-block.triangle.triangle-down {:style {:border-width "8.7px 5px 0 5px"}}]
+           [:div.mr2.inline-block.triangle.triangle-right {:style {:border-width "5px 0 5px 8.7px" :margin-left "2px"}}])
+         (:service/service-name service)]
+        [:div.col.col-2 (:service/task-def-name service)]
+        [:div.col.col-2 (:service/number-of-tasks service)]]
+       (when @expanded
+         [:div.my1.ml3.p1.bg-off-white
+          (when-let [task-def (:service/task-definition service)]
+            [:div
+             [:div.my1.underline "Task Def"]
+             [:div "Memory: " (apply + (map :memory (:task-definition/container-definitions task-def)))]
+             [:div "CPU: " (apply + (map :cpu (:task-definition/container-definitions task-def)))]])])])))
 
 (defn services-list [db modal-display]
   [:div.my3

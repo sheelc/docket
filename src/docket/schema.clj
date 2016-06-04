@@ -9,4 +9,7 @@
              :task/cluster {:db/valueType :db.type/ref}
              :task/container-instance {:db/valueType :db.type/ref}
 
-             :service/service-name {:db/unique :db.unique/identity}})
+             :service/service-name {:db/unique :db.unique/identity}
+             :service/task-definition {:db/valueType :db.type/ref}
+
+             :task-definition/name {:db/unique :db.unique/identity}})
