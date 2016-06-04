@@ -58,7 +58,7 @@
       ^{:key (:container-instance/container-instance-arn instance)} [instance-item db instance])]])
 
 (defn service-item [service]
-  [:div.clearfix
+  [:div.clearfix.my1
    [:div.col.col-2 (:service/service-name service)]
    [:div.col.col-2 (:service/number-of-tasks service)]
    [:div.col.col-2 (:service/task-def service)]])
