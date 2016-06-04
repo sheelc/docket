@@ -77,10 +77,6 @@
    (for [service (qu/qes-by @db :service/service-name)]
      ^{:key (:service/service-name service)} [service-item service])])
 
-(defn scrim [modal-display]
-  [:div.absolute.top-0.left-0.body-fill.bg-light-gray.semi-transparent
-   {:on-click #(reset! modal-display nil)}])
-
 (defn top-component [{:keys [db] :as app}]
   (let [db (:db @app)
         modal-display (r/cursor app [:ui :modal-display])
@@ -90,5 +86,5 @@
        [cluster-summary cluster]
        [instances-list db]
        [services-list db modal-display]
-       (when @modal-display [scrim modal-display])
+       (when @modal-display [:div.fixed.top-0.left-0.right-0.bottom-0.bg-light-gray.semi-transparent])
        (when @modal-display [modal modal-display])])))
