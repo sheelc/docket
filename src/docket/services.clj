@@ -4,7 +4,7 @@
             [docket.datascript-utils :as du])
   (:import [com.amazonaws AmazonServiceException]))
 
-(defn add-task-name [t]
+(defn add-task-def-name [t]
   (assoc t :name (str (:family t) ":" (:revision t))))
 
 (defn create-service [app-state params]
@@ -17,7 +17,7 @@
         (try
           (let [task-def (:task-definition (ecs/describe-task-definition {:task-definition (:task-def-name params)}))]
             (d/transact! app-state (concat (->> task-def
-                                                add-task-name
+                                                add-task-def-name
                                                 (du/prefix-keys "task-definition")
                                                 (conj nil))
                                            (->> (select-keys params [:service-name :number-of-tasks :task-def-name])
