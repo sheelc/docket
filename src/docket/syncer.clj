@@ -2,9 +2,11 @@
   (:require [com.stuartsierra.component :as component]
             [overtone.at-at :as at-at]
             [datascript.core :as d]
-            [clojure.set :refer [difference]]
+            [clojure.set :refer [difference intersection]]
             [docket.accessors.instance :as instance]
+            [docket.accessors.task-def :as task-def]
             [docket.datascript-utils :as du]
+            [docket.query-utils :as qu]
             [amazonica.aws.ecs :as ecs]))
 
 (defn get-cluster [cluster-arn]
@@ -24,7 +26,8 @@
 (defn add-resource-keys [{rem-resources :container-instance/remaining-resources :as inst}]
   (assoc inst
          :container-instance/remaining-memory (instance/remaining-memory inst)
-         :container-instance/remaining-cpu (instance/remaining-cpu inst)))
+         :container-instance/remaining-cpu (instance/remaining-cpu inst)
+         :container-instance/used-ports (instance/used-ports inst)))
 
 (defn update-container-instance-txns [cluster-arn container-instance-arns]
   (map (comp (partial du/add-refs {:container-instance/cluster (constantly [:cluster/cluster-arn cluster-arn])})
@@ -55,11 +58,86 @@
                  (partial update-task-txns cluster-arn)))
 
 (defn sync-state [cluster-arn logger app-state]
+  (d/transact! app-state
+               (concat [(get-cluster cluster-arn)]
+                       (container-instance-txns app-state cluster-arn)
+                       (task-txns app-state cluster-arn))))
+
+(defn ports-available? [used-ports req-ports]
+  (empty? (intersection (set used-ports) (set req-ports))))
+
+(defn best-container-instance-for-task [app-state mem cpu ports]
+  (ffirst (d/q '[:find ?arn
+                 :in $ ?req-mem ?req-cpu ?req-ports ?ports-available?
+                 :where
+                 [?c :container-instance/remaining-memory ?rem-mem]
+                 [?c :container-instance/remaining-cpu ?rem-cpu]
+                 [?c :container-instance/used-ports ?used-ports]
+                 [(<= ?req-mem ?rem-mem)]
+                 [(<= ?req-cpu ?rem-cpu)]
+                 [(?ports-available? ?used-ports ?req-ports)]
+                 [?c :container-instance/container-instance-arn ?arn]]
+               @app-state mem cpu ports ports-available?)))
+
+(defn ecs-start-task [logger cluster-arn container-instance-arn started-by task-def-name]
+  (let [res (ecs/start-task {:cluster cluster-arn
+                             :container-instances [container-instance-arn]
+                             :started-by started-by
+                             :task-definition task-def-name})]
+    (when (seq (:failures res))
+      (logger :info (str "Failed proper scheduling of task: " (pr-str (:failures res)))))))
+
+(defn start-task [logger cluster-arn app-state service]
+  (let [service-name (:service/service-name service)
+        task-def (:service/task-definition service)
+        mem (task-def/memory task-def)
+        cpu (task-def/cpu task-def)
+        ports (map str (task-def/ports task-def))]
+    (if-let [container-instance-arn (best-container-instance-for-task app-state mem cpu ports)]
+      (do
+        (logger :info (str "Starting task on " container-instance-arn " for " service-name))
+        (ecs-start-task logger
+                        cluster-arn
+                        container-instance-arn
+                        (str "docket-svc/" service-name)
+                        (:task-definition/name task-def))
+        (d/transact! app-state (container-instance-txns app-state cluster-arn)))
+      (logger :info (str "No suitable container instance found for " (:service/service-name service))))))
+
+(defn start-tasks [logger cluster-arn app-state service num-to-start]
+  (dotimes [i num-to-start]
+    (start-task logger cluster-arn app-state service)))
+
+(defn kill-tasks [logger cluster-arn app-state service num-to-kill]
+  (logger :info "Killing " num-to-kill " tasks for service " service))
+
+(defn sync-running-tasks [cluster-arn logger app-state]
+  (let [snapshot @app-state]
+    (doseq [service (qu/qes-by snapshot :service/service-name)]
+      (let [desired-count (:service/number-of-tasks service)
+            actual-count (-> (d/q '[:find (count ?t)
+                                    :in $ ?started-by %
+                                    :where
+                                    [?t :task/started-by ?started-by]
+                                    (scheduled-task ?t)]
+                                  snapshot
+                                  (str "docket-svc/" (:service/service-name service))
+                                  '[[(scheduled-task ?t)
+                                     [?t :task/last-status "RUNNING"]]
+                                    [(scheduled-task ?t)
+                                     [?t :task/last-status "PENDING"]]])
+                             ffirst
+                             (or 0))
+            delta (- actual-count desired-count)]
+        (cond
+          (neg? delta) (start-tasks logger cluster-arn app-state service (- delta))
+          (pos? delta) (kill-tasks logger cluster-arn app-state service delta)
+          :else :noop)))))
+
+(defn sync-cluster [cluster-arn logger app-state]
   (try
-    (d/transact! app-state
-                 (concat [(get-cluster cluster-arn)]
-                         (container-instance-txns app-state cluster-arn)
-                         (task-txns app-state cluster-arn)))
+    (sync-state cluster-arn logger app-state)
+    (sync-running-tasks cluster-arn logger app-state)
     (catch Exception e
       (logger :error e))))
 
@@ -67,7 +145,7 @@
   component/Lifecycle
   (start [c]
     (let [pool (at-at/mk-pool)]
-      (at-at/every 10000 #(sync-state cluster-arn logger app-state) pool)
+      (at-at/every 10000 #(sync-cluster cluster-arn logger app-state) pool)
       (assoc c :pool pool)))
   (stop [c]
     (when-let [pool (:pool c)]

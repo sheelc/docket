@@ -4,7 +4,8 @@
             [docket.components.modal :refer [modal]]
             [clojure.string :as str]
             [datascript.core :as d]
-            [docket.accessors.instance :as instance]))
+            [docket.accessors.instance :as instance]
+            [docket.accessors.task-def :as task-def]))
 
 (defn cluster-summary [cluster]
   [:div.p2.bg-off-white
@@ -75,8 +76,9 @@
           (when-let [task-def (:service/task-definition service)]
             [:div
              [:div.my1.underline "Task Def"]
-             [:div "Memory: " (apply + (map :memory (:task-definition/container-definitions task-def)))]
-             [:div "CPU: " (apply + (map :cpu (:task-definition/container-definitions task-def)))]])])])))
+             [:div "Memory: " (task-def/memory task-def)]
+             [:div "CPU: " (task-def/cpu task-def)]
+             [:div "Ports: " (str/join ", " (task-def/ports task-def))]])])])))
 
 (defn services-list [db modal-display]
   [:div.my3
