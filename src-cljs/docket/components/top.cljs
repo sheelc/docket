@@ -58,9 +58,9 @@
     (for [instance (qu/qes-by @db :container-instance/container-instance-arn)]
       ^{:key (:container-instance/container-instance-arn instance)} [instance-item db instance])]])
 
-(defn service-item [service]
+(defn service-item [modal-display service]
   (let [expanded (r/atom false)]
-    (fn [service]
+    (fn [modal-display service]
       [:div
        [:a.block.clearfix.my1.pointer
         {:on-click #(swap! expanded not)}
@@ -74,25 +74,30 @@
        (when @expanded
          [:div.my1.ml3.p1.bg-off-white
           (when-let [task-def (:service/task-definition service)]
-            [:div
-             [:div.my1.underline "Task Def"]
-             [:div "Memory: " (task-def/memory task-def)]
-             [:div "CPU: " (task-def/cpu task-def)]
-             [:div "Ports: " (str/join ", " (task-def/ports task-def))]])])])))
+            [:div.clearfix.py1
+             [:div.col.col-2
+              [:div.underline "Task Def"]
+              [:div "Memory: " (task-def/memory task-def)]
+              [:div "CPU: " (task-def/cpu task-def)]
+              [:div "Ports: " (str/join ", " (task-def/ports task-def))]]
+             [:div.col.col-2
+              [:a.underline.pointer
+               {:on-click #(reset! modal-display [:update-service {:service service}])}
+               "Update Service"]]])])])))
 
 (defn services-list [db modal-display]
   [:div.my3
    [:div.clearfix
     [:a.h2.inline-block "Services"]
     [:a.ml2.pointer
-     {:on-click #(reset! modal-display :add-service)}
+     {:on-click #(reset! modal-display [:add-service nil])}
      "+ Add Service"]]
    [:div.clearfix.my1.border-bottom
     [:div.col.col-2 "Service Name"]
     [:div.col.col-2 "Task Definition"]
     [:div.col.col-2 "Desired number of Tasks"]]
    (for [service (qu/qes-by @db :service/service-name)]
-     ^{:key (:service/service-name service)} [service-item service])])
+     ^{:key (:service/service-name service)} [service-item modal-display service])])
 
 (defn top-component [{:keys [db] :as app}]
   (let [db (:db @app)

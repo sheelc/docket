@@ -35,7 +35,9 @@
                (GET "/socket" req (create-socket socket-manager logger req))
                (context "/api" []
                         (POST "/create-service" {params :params}
-                              (res->api-resp (services/create-service app-state params))))
+                              (res->api-resp (services/create-service app-state params)))
+                        (POST "/update-service" {params :params}
+                              (res->api-resp (services/update-service app-state params))))
                (route/resources "/")
                (route/not-found "Not found"))
        (wrap-json-response)

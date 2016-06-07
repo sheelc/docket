@@ -109,7 +109,7 @@
     (start-task logger cluster-arn app-state service)))
 
 (defn kill-tasks [logger cluster-arn app-state service num-to-kill]
-  (logger :info "Killing " num-to-kill " tasks for service " service))
+  (logger :info (str "Killing " num-to-kill " tasks for service " service)))
 
 (defn sync-running-tasks [cluster-arn logger app-state]
   (let [snapshot @app-state]

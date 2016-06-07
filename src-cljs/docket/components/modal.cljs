@@ -12,11 +12,11 @@
   (.preventDefault e)
   (f))
 
-(defn add-service-modal []
+(defn add-service-modal [args]
   (let [inputs (r/atom {})
         success-response (r/atom {})
         failure-response (r/atom {})]
-    (fn []
+    (fn [args]
       (if (seq @success-response)
         [:div.my2.green (:message @success-response)]
         [:form
@@ -38,6 +38,31 @@
          (when-let [msg (:message @failure-response)]
            [:div.mt2.orange msg])]))))
 
+(defn update-service-modal [{:keys [service]}]
+  (let [inputs (r/atom {:number-of-tasks (:service/number-of-tasks service)})
+        success-response (r/atom {})
+        failure-response (r/atom {})]
+    (fn [{:keys [service]}]
+      (let [service-name (:service/service-name service)]
+        (if (seq @success-response)
+          [:div.my2.green (:message @success-response)]
+          [:div
+           [:div.h3 "Updating service " service-name]
+           [:form
+            {:on-submit (partial prevent-default
+                           #(api/update-service
+                             (partial store-response success-response)
+                             (partial store-response failure-response)
+                             (merge @inputs {:service-name service-name})))}
+
+            [:label.h3.block.mt3.mb1 "Desired Number of Tasks"]
+            [:input.h3.block {:type "number" :min 0 :value (:number-of-tasks @inputs)
+                              :on-change (partial store-input inputs :number-of-tasks)}]
+
+            [:input.mt3 {:type "submit" :value "Update!"}]
+            (when-let [msg (:message @failure-response)]
+              [:div.mt2.orange msg])]])))))
+
 (defn modal [modal-display]
   (let [inputs (r/atom {})
         success-response (r/atom {})
@@ -48,4 +73,7 @@
         [:div.clearfix.border-bottom.mb2.pb1
          [:a.right.pointer.h2
           {:on-click #(reset! modal-display nil)} "×"]]
-        [add-service-modal]]])))
+        (let [[modal-display-style modal-display-args] @modal-display]
+          (condp = modal-display-style
+            :add-service [add-service-modal modal-display-args]
+            :update-service [update-service-modal modal-display-args]))]])))

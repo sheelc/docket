@@ -36,3 +36,17 @@
           {:message (str "Service " service-name " created") :success true}
           (catch AmazonServiceException e
             {:message "Task def couldn't be fetched, does it exist?" :success false}))))))
+
+(defn update-service [app-state params]
+  (let [service-name (:service-name params)
+        existing-service (ffirst (d/q '[:find ?e :in $ ?sn :where [?e :service/service-name ?sn]]
+                                      @app-state service-name))]
+    (if existing-service
+      ;; Needs to be updated to handle deployment
+      (do
+        (d/transact! app-state (->> (select-keys params [:service-name :number-of-tasks])
+                                    (coerce-to-int :number-of-tasks)
+                                    (du/prefix-keys "service")
+                                    (conj nil)))
+        {:message (str "Service " service-name " updated") :success true})
+      {:message (str "Service " service-name " does not exist") :success false})))
