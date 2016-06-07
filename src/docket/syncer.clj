@@ -101,15 +101,33 @@
                         container-instance-arn
                         (str "docket-svc/" service-name)
                         (:task-definition/name task-def))
-        (d/transact! app-state (container-instance-txns app-state cluster-arn)))
+        (d/transact! app-state (update-container-instance-txns cluster-arn [container-instance-arn])))
       (logger :info (str "No suitable container instance found for " (:service/service-name service))))))
 
 (defn start-tasks [logger cluster-arn app-state service num-to-start]
   (dotimes [i num-to-start]
     (start-task logger cluster-arn app-state service)))
 
-(defn kill-tasks [logger cluster-arn app-state service num-to-kill]
-  (logger :info (str "Killing " num-to-kill " tasks for service " service)))
+(defn stop-task [logger cluster-arn app-state service]
+  (let [service-name (:service/service-name service)
+        task-to-stop-arn (ffirst
+                          (d/q '[:find ?arn
+                                 :in $ ?started-by
+                                 :where
+                                 [?t :task/started-by ?started-by]
+                                 [?t :task/desired-status "RUNNING"]
+                                 [?t :task/task-arn ?arn]]
+                               @app-state (str "docket-svc/" service-name)))]
+    (if task-to-stop-arn
+      (do
+        (logger :info (str "Stopping task " task-to-stop-arn "for service " service-name))
+        (ecs/stop-task {:cluster cluster-arn :task task-to-stop-arn})
+        (d/transact! app-state (update-task-txns cluster-arn [task-to-stop-arn])))
+      (logger :info (str "Could not find task to stop for " service-name)))))
+
+(defn stop-tasks [logger cluster-arn app-state service num-to-stop]
+  (dotimes [i num-to-stop]
+    (stop-task logger cluster-arn app-state service)))
 
 (defn sync-running-tasks [cluster-arn logger app-state]
   (let [snapshot @app-state]
@@ -123,15 +141,17 @@
                                   snapshot
                                   (str "docket-svc/" (:service/service-name service))
                                   '[[(scheduled-task ?t)
+                                     [?t :task/desired-status "RUNNING"]
                                      [?t :task/last-status "RUNNING"]]
                                     [(scheduled-task ?t)
+                                     [?t :task/desired-status "RUNNING"]
                                      [?t :task/last-status "PENDING"]]])
                              ffirst
                              (or 0))
             delta (- actual-count desired-count)]
         (cond
           (neg? delta) (start-tasks logger cluster-arn app-state service (- delta))
-          (pos? delta) (kill-tasks logger cluster-arn app-state service delta)
+          (pos? delta) (stop-tasks logger cluster-arn app-state service delta)
           :else :noop)))))
 
 (defn sync-cluster [cluster-arn logger app-state]
